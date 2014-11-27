@@ -1,5 +1,4 @@
 # Small script to generate Tetris Canvas
-
 from PIL import Image, ImageDraw
 
 # size of square on the tetris grid
