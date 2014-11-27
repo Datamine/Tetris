@@ -1,4 +1,4 @@
-# John Loeber | Nov 26 | Python 2.7.8 | x86_64 Debian Linux | www.johnloeber.com
+# John Loeber | 26-NOV-2014 | Python 2.7.8 | x86_64 Debian Linux | www.johnloeber.com
 from sys import exit
 from makecanvas import gridline, blocksize
 from ImageColor import getrgb
@@ -13,12 +13,8 @@ class Block(object):
         self.color = color
         self.x = x
         self.y = y
-    def down(self):
-        self.y += 1
     def getposn(self):
-        z = ((blocksize*self.x)+self.x+6,(blocksize*self.y)+self.y+6)
-        print z
-        return z
+        return = ((blocksize*self.x)+self.x+6,(blocksize*self.y)+self.y+6)
     def getimg(self):
         global blockimages
         return blockimages[self.color]
@@ -36,6 +32,16 @@ def makeblockimages():
         blockimages[c] = newblock
     return
 
+def shapedown(blocks,board):
+    """
+    Moves a shape down one square.
+    """
+    for block in blocks:
+        # make sure the given square is available
+        if board[block.x][block.y+1]=='':
+            block.y += 1
+    
+
 def main():
     makeblockimages()
     pygame.init()
@@ -49,8 +55,11 @@ def main():
     backgroundcolor = getrgb(gridline)
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: exit()
-        
+            if event.type == pygame.QUIT: 
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN:
+                    shapedown(blocks)
         screen.fill(backgroundcolor)
         # unsure if this use of .blit() is the most efficient I could do
         # on this scale, that probably does not matter
@@ -60,8 +69,7 @@ def main():
         # get rotation...
 
         # move current block down
-        for block in blocks:
-            block.down()
+        shapedown(blocks,board)
         for block in blocks:
             screen.blit(block.getimg(), block.getposn())
         time.sleep(1)
