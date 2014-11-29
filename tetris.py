@@ -88,9 +88,9 @@ def main():
 
     screen = pygame.display.set_mode(size)
 
-    blocks = [Block("#FFE922",4,0)]
+    blocks = []
     
-    #blocks.append(randomshape())    
+    blocks.append(randomshape())    
     
     # allows for [x][y] indexing, but is actually a list of columns. A
     # bit unintuitive.
