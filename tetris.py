@@ -133,6 +133,17 @@ def handle(tetrimino,board,direction):
         tetrimino.b4.y = newb4y
     return
 
+def drop(tetrimino,board):
+    """
+    Drops a piece.
+    """
+    prev = deepcopy(tetrimino)
+    shapemove(tetrimino,board,0,1)
+    while prev.getcoords()!=tetrimino.getcoords():
+        shapemove(prev,board,0,1)
+        shapemove(tetrimino,board,0,1)
+    return
+
 def shaperotate(tetrimino,board):
     """
     Rotates a tetrimino.
@@ -197,6 +208,8 @@ def main():
                     shaperotate(tetrimino,board)
                 elif event.key == pygame.K_ESCAPE:
                     exit(0)
+                elif event.key == pygame.K_SPACE:
+                    drop(tetrimino,board)
         newpiece = False
         coords = tetrimino.getcoords()
         for c in coords:
