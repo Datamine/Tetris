@@ -4,8 +4,9 @@ from sys import exit
 from makecanvas import gridline, blocksize
 from ImageColor import getrgb
 from random import choice
+from copy import deepcopy
+from time import sleep
 import pygame
-import time
 
 class Block(object):
     def __init__(self,color,x,y):
@@ -26,9 +27,10 @@ class Tetrimino(object):
         self.b4 = blocks[3]
         self.centerx = center[0]
         self.centery = center[1]
-        self.rotations = 0
     def blocks(self):
         return [self.b1,self.b2,self.b3,self.b4]
+    def getcoords(self):
+        return [(b.x,b.y) for b in self.blocks()]
 
 blockimages = {}
 
@@ -53,10 +55,10 @@ shapes = [# "I"
 
 def newtetrimino():
     """
-    Returns a random, new tetromino.
+    Returns a random, new tetrimino.
     """
     global shapes
-    return choice(shapes[5:])
+    return deepcopy(choice(shapes))
 
 def makeblockimages():
     """
@@ -69,6 +71,12 @@ def makeblockimages():
         newblock.fill(getrgb(c))
         blockimages[c] = newblock
     return
+
+def pboard(board):
+    print "=============="
+    for j in range(20):
+        l= map(lambda x: 'X' if x!='' else ' ', [board[i][j] for i in range(10)])
+        print l
 
 def shapemove(tetrimino,board,x,y):
     """
@@ -83,6 +91,7 @@ def shapemove(tetrimino,board,x,y):
         if not (0 <= block.x+x < 10 and 0 <= block.y+y < 20):
             available = False
         elif board[block.x+x][block.y+y]!='':
+            print "CANT MOVE DOWN", block.x+x, block.y+y
             available = False
     if available:
         for block in blocks:
@@ -164,18 +173,16 @@ def main():
     size = (341,700)
 
     screen = pygame.display.set_mode(size)
-    clock = pygame.tick.Clock()
 
     tetrimino = newtetrimino()
     
     # allows for [x][y] indexing, but is actually a list of columns. A
     # bit unintuitive.
-    board = [['']*20]*10
+    board = [['']*20 for n in range(10)]
     
     background = pygame.image.load("Grid.PNG")
     backgroundcolor = getrgb(gridline)
     while True:
-        clock.tick = 60
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 exit()
@@ -188,20 +195,49 @@ def main():
                     shapemove(tetrimino,board,1,0)
                 elif event.key == pygame.K_UP:
                     shaperotate(tetrimino,board)
+                elif event.key == pygame.K_ESCAPE:
+                    exit(0)
+        newpiece = False
+        coords = tetrimino.getcoords()
+        for c in coords:
+            if c[1]==19:
+                newpiece=True
+                break
+            try:
+                if board[c[0]][c[1]+1]!='':
+                    newpiece=True
+                    break
+            except:
+                print "error 200"
+        if newpiece:
+            for t in tetrimino.blocks():
+                print t.x,t.y
+                board[t.x][t.y] = t
+            tetrimino = newtetrimino()
+            coords = tetrimino.getcoords()
+            for (x,y) in coords:
+                if board[x][y]!='':
+                    sleep(10)
+        else:
+            # move current block down
+            shapemove(tetrimino,board,0,1)
+
         screen.fill(backgroundcolor)
         # unsure if this use of .blit() is the most efficient I could do
         # on this scale, that probably does not matter
         screen.blit(background,(5,5))
         # blit the known blocks here...
-        
+        for y in board:
+            for x in y:
+                if x!='':
+                    screen.blit(x.getimg(),x.getposn())
+        pboard(board)
         # get rotation...
 
         # update screen
         for block in tetrimino.blocks():
             screen.blit(block.getimg(), block.getposn())
-        # move current block down
-        #shapemove(tetrimino,board,0,1)
-        time.sleep(0.5)
+        sleep(0.1)
         pygame.display.flip()
 
 # let's say the user is allowed three 'moves' per downward step
