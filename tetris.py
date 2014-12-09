@@ -164,6 +164,7 @@ def main():
     size = (341,700)
 
     screen = pygame.display.set_mode(size)
+    clock = pygame.tick.Clock()
 
     tetrimino = newtetrimino()
     
@@ -174,6 +175,7 @@ def main():
     background = pygame.image.load("Grid.PNG")
     backgroundcolor = getrgb(gridline)
     while True:
+        clock.tick = 60
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 exit()
