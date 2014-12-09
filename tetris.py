@@ -72,12 +72,6 @@ def makeblockimages():
         blockimages[c] = newblock
     return
 
-def pboard(board):
-    print "=============="
-    for j in range(20):
-        l= map(lambda x: 'X' if x!='' else ' ', [board[i][j] for i in range(10)])
-        print l
-
 def shapemove(tetrimino,board,x,y):
     """
     Positional translation of blocks by x and y, but checking for possibility
@@ -178,12 +172,7 @@ def shaperotate(tetrimino,board):
                 b.y = locs[index][1]
     return
 
-def main():
-    makeblockimages()
-    pygame.init()
-    size = (341,700)
-
-    screen = pygame.display.set_mode(size)
+def game():
 
     tetrimino = newtetrimino()
     
@@ -221,7 +210,7 @@ def main():
                     newpiece=True
                     break
             except:
-                print "error 200"
+                print "Unexpected Error"
         if newpiece:
             for t in tetrimino.blocks():
                 print t.x,t.y
@@ -244,8 +233,6 @@ def main():
             for x in y:
                 if x!='':
                     screen.blit(x.getimg(),x.getposn())
-        pboard(board)
-        # get rotation...
 
         # update screen
         for block in tetrimino.blocks():
@@ -253,7 +240,13 @@ def main():
         sleep(0.1)
         pygame.display.flip()
 
-# let's say the user is allowed three 'moves' per downward step
+def main():
+    makeblockimages()
+    pygame.init()
+    size = (341,700)
+    screen = pygame.display.set_mode(size)
+    startscreen()
+    game()
 
 if __name__=='__main__':
     main()
