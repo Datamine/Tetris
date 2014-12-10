@@ -34,8 +34,8 @@ class Tetrimino(object):
 
 blockimages = {}
 
-# Colors of the Tetriminoes
-colors = ["#FFE922","#3CFF2D","#2F3AFF","#990084","#CC1100","#FF7E00","#065C00"]
+# Colors of the Tetriminoes, white for the flashing effect
+colors = ["#FFE922","#3CFF2D","#2F3AFF","#990084","#CC1100","#FF7E00","#065C00","#FFFFFF"]
 
 # define the different tetriminoes. ([Blocks],[Center]): center for rotation
 shapes = [# "I"
@@ -171,6 +171,13 @@ def shaperotate(tetrimino,board):
                 b.y = locs[index][1]
     return
 
+def blitboard(board,screen):
+    for y in board:
+        for x in y:
+            if x!='':
+                screen.blit(x.getimg(),x.getposn())
+    return
+
 def maketext(screen,blacklines,whitelines,posns):
     for i in range(len(blacklines)):
         offone = (posns[i][0]+2,posns[i][1]+2)
@@ -198,12 +205,9 @@ def gameover(screen):
             if event.type == pygame.QUIT: 
                 exit(0)
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_DOWN:
-                    shapemove(tetrimino,board,0,1)
-                elif event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_ESCAPE:
                     exit(0)
                 elif event.key == pygame.K_RETURN:
-                    game(screen)
                     return
 
 def pause(screen):
@@ -220,6 +224,46 @@ def pause(screen):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     return
+def pboard(board):
+    print "=============="
+    for j in range(20):
+        l= map(lambda x: 'X' if x!='' else ' ', [board[i][j] for i in range(10)])
+        print l
+
+def check(board,screen):
+    b2 = deepcopy(board)
+    effect = False
+    rows = []
+    for i in range(20):
+            row = [b2[x][i] for x in range(10)]
+            if all(i!='' for i in row):
+                rows.append(i)
+                for t in row:
+                    t.color="#FFFFFF"
+                effect=True
+    if effect:
+        blitboard(b2,screen)
+        pygame.display.flip()
+        time.sleep(0.02)
+        blitboard(board,screen)
+        pygame.display.flip()
+        time.sleep(0.02)
+        blitboard(b2,screen)
+        pygame.display.flip()
+        while rows:
+            current = max(rows)
+            for i in range(10):
+                for j in range(current):
+                    if board[i][j]!='':
+                        board[i][j].y += 1
+                print "------\n", board[i]
+                del board[i][current]
+                board[i] = [''] + board[i]
+                print board[i]
+            rows.remove(current)
+            rows = map(lambda y: y+1,rows)
+        return True
+    return False
 
 def game(screen):
     cleared = 0
@@ -248,10 +292,17 @@ def game(screen):
                     shaperotate(tetrimino,board)
                 elif event.key == pygame.K_ESCAPE:
                     exit(0)
+                elif event.key == pygame.K_n:
+                    return
                 elif event.key == pygame.K_p:
                     pause(screen)
                 elif event.key == pygame.K_SPACE:
                     drop(tetrimino,board)
+        x = check(board,screen)
+        #pboard(board)
+        if x:
+            blitboard(board,screen)
+            pygame.display.flip()
         newpiece = False
         coords = tetrimino.getcoords()
         for c in coords:
@@ -272,6 +323,7 @@ def game(screen):
             for (x,y) in coords:
                 if board[x][y]!='':
                     gameover(screen)
+                    return
         else:
             newt = time.time()
             if timestep+timeinterval < newt:
@@ -286,11 +338,7 @@ def game(screen):
         screen.blit(background,(5,5))
         
         # blit the known blocks here...
-        for y in board:
-            for x in y:
-                if x!='':
-                    screen.blit(x.getimg(),x.getposn())
-
+        blitboard(board,screen)
         # update screen
         for block in tetrimino.blocks():
             screen.blit(block.getimg(), block.getposn())
@@ -320,6 +368,10 @@ def start(screen):
                 elif event.key == pygame.K_ESCAPE:
                     exit(0)
 
+def handler(screen):
+    while True:
+        game(screen)
+
 def main():
     makeblockimages()
     pygame.init()
@@ -329,7 +381,7 @@ def main():
     typeface = pygame.font.Font('BebasNeue.ttf',32)
 
     start(screen)
-    game(screen)
+    handler(screen)
 
 if __name__=='__main__':
     main()
