@@ -5,7 +5,7 @@ from makecanvas import gridline, blocksize
 from ImageColor import getrgb
 from random import choice
 from copy import deepcopy
-from time import sleep
+import time
 import pygame
 
 class Block(object):
@@ -85,7 +85,6 @@ def shapemove(tetrimino,board,x,y):
         if not (0 <= block.x+x < 10 and 0 <= block.y+y < 20):
             available = False
         elif board[block.x+x][block.y+y]!='':
-            print "CANT MOVE DOWN", block.x+x, block.y+y
             available = False
     if available:
         for block in blocks:
@@ -172,8 +171,58 @@ def shaperotate(tetrimino,board):
                 b.y = locs[index][1]
     return
 
-def game():
+def maketext(screen,blacklines,whitelines,posns):
+    for i in range(len(blacklines)):
+        offone = (posns[i][0]+2,posns[i][1]+2)
+        offtwo = (posns[i][0]-2,posns[i][1]-2)
+        offthree = (posns[i][0]+2,posns[i][1]-2)
+        offfour = (posns[i][0]-2,posns[i][1]+2)
+        screen.blit(blacklines[i],offone)
+        screen.blit(blacklines[i],offtwo)
+        screen.blit(blacklines[i],offthree)
+        screen.blit(blacklines[i],offfour)
+        screen.blit(whitelines[i],posns[i])
+    pygame.display.flip()
+    return
 
+def gameover(screen):
+    global typeface
+    lines = ['Game Over','Hit ENTER to play again','Hit ESC to quit']
+    blacklines = [typeface.render(i,1,getrgb("#000000")) for i in lines]
+    whitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in lines]
+    # calculated the positions by hand and hardcoded them
+    posns = [(116,286),(46,330),(94,374)]
+    maketext(screen,blacklines,whitelines,posns)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: 
+                exit(0)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN:
+                    shapemove(tetrimino,board,0,1)
+                elif event.key == pygame.K_ESCAPE:
+                    exit(0)
+                elif event.key == pygame.K_RETURN:
+                    game(screen)
+                    return
+
+def pause(screen):
+    global typeface
+    lines = ['Paused',"Hit 'p' to resume"]
+    blacklines = [typeface.render(i,1,getrgb("#000000")) for i in lines]
+    whitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in lines]
+    posns = [(133,309),(83,353)]
+    maketext(screen,blacklines,whitelines,posns)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: 
+                exit(0)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    return
+
+def game(screen):
+    cleared = 0
     tetrimino = newtetrimino()
     
     # allows for [x][y] indexing, but is actually a list of columns. A
@@ -182,10 +231,12 @@ def game():
     
     background = pygame.image.load("Grid.PNG")
     backgroundcolor = getrgb(gridline)
+    timestep = time.time()
     while True:
+        timeinterval = 0.5
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
-                exit()
+                exit(0)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
                     shapemove(tetrimino,board,0,1)
@@ -197,6 +248,8 @@ def game():
                     shaperotate(tetrimino,board)
                 elif event.key == pygame.K_ESCAPE:
                     exit(0)
+                elif event.key == pygame.K_p:
+                    pause(screen)
                 elif event.key == pygame.K_SPACE:
                     drop(tetrimino,board)
         newpiece = False
@@ -213,21 +266,25 @@ def game():
                 print "Unexpected Error"
         if newpiece:
             for t in tetrimino.blocks():
-                print t.x,t.y
                 board[t.x][t.y] = t
             tetrimino = newtetrimino()
             coords = tetrimino.getcoords()
             for (x,y) in coords:
                 if board[x][y]!='':
-                    sleep(10)
+                    gameover(screen)
         else:
-            # move current block down
-            shapemove(tetrimino,board,0,1)
+            newt = time.time()
+            if timestep+timeinterval < newt:
+                # move current block down
+                shapemove(tetrimino,board,0,1)
+                timestep = newt        
 
-        screen.fill(backgroundcolor)
         # unsure if this use of .blit() is the most efficient I could do
         # on this scale, that probably does not matter
+
+        screen.fill(backgroundcolor)
         screen.blit(background,(5,5))
+        
         # blit the known blocks here...
         for y in board:
             for x in y:
@@ -237,16 +294,42 @@ def game():
         # update screen
         for block in tetrimino.blocks():
             screen.blit(block.getimg(), block.getposn())
-        sleep(0.1)
         pygame.display.flip()
+
+def start(screen):
+    title = pygame.font.Font('BebasNeue.ttf',72)
+    instruct = pygame.font.Font('BebasNeue.ttf',26)
+    color = getrgb("#FFFFFF")
+    screen.fill(getrgb("#000000"))
+    lines = ['Hit ENTER to play',"ESC to quit","P to pause","Arrow keys and space to move"]
+
+    tetris = title.render("TETRIS",1,color)
+    whitelines = [instruct.render(i,1,color) for i in lines]
+    posns = [(93,332),(121,379),(124,426),(34,473)]
+    screen.blit(tetris,(95,225))
+    for i in range(len(posns)):
+        screen.blit(whitelines[i],posns[i])
+    pygame.display.flip()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: 
+                exit(0)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    return
+                elif event.key == pygame.K_ESCAPE:
+                    exit(0)
 
 def main():
     makeblockimages()
     pygame.init()
     size = (341,700)
     screen = pygame.display.set_mode(size)
-    startscreen()
-    game()
+    global typeface
+    typeface = pygame.font.Font('BebasNeue.ttf',32)
+
+    start(screen)
+    game(screen)
 
 if __name__=='__main__':
     main()
