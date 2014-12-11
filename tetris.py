@@ -201,11 +201,11 @@ def maketext(screen,blacklines,whitelines,posns):
 
 def gameover(screen):
     global typeface
-    lines = ['Game Over','Hit ENTER to play again','Hit ESC to quit']
+    lines = ['Game Over','Hit ENTER to play again','ESC to quit', 'M for main menu']
     blacklines = [typeface.render(i,1,getrgb("#000000")) for i in lines]
     whitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in lines]
     # calculated the positions by hand and hardcoded them
-    posns = [(116,286),(46,330),(94,374)]
+    posns = [(116,247),(46,306),(112,360),(83,414)]
     maketext(screen,blacklines,whitelines,posns)
     while True:
         for event in pygame.event.get():
@@ -214,17 +214,20 @@ def gameover(screen):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     exit(0)
+                elif event.key == pygame.K_m:
+                    return 9
                 elif event.key == pygame.K_n:
-                    return
+                    return 1
                 elif event.key == pygame.K_RETURN:
-                    return
+                    return 1
 
 def pause(screen):
     global typeface
-    lines = ['Paused',"Hit 'p' to resume"]
+    lines = ['Paused',"Hit p to resume"]
     blacklines = [typeface.render(i,1,getrgb("#000000")) for i in lines]
     whitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in lines]
-    posns = [(133,309),(83,353)]
+    print blacklines[1].get_rect().width
+    posns = [(133,309),(89,353)]
     maketext(screen,blacklines,whitelines,posns)
     while True:
         for event in pygame.event.get():
@@ -279,7 +282,8 @@ def game(screen,startinglevel):
     backgroundcolor = getrgb(gridline)
     timestep = time.time()
     while True:
-        timeinterval = 0.5
+        level = cleared/10 + startinglevel
+        timeinterval = 0.75*(0.95**level)
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 exit(0)
@@ -295,16 +299,16 @@ def game(screen,startinglevel):
                 elif event.key == pygame.K_ESCAPE:
                     exit(0)
                 elif event.key == pygame.K_n:
-                    return
+                    return 1
+                elif event.key == pygame.K_m:
+                    return 9
                 elif event.key == pygame.K_p:
                     pause(screen)
                 elif event.key == pygame.K_SPACE:
                     drop(tetrimino,board)
+   
         x = 0
         x = check(board,screen)
-        if x>0:
-            blitboard(board,screen)
-            pygame.display.flip()
         cleared += x
         newpiece = False
         coords = tetrimino.getcoords()
@@ -325,8 +329,8 @@ def game(screen,startinglevel):
             coords = tetrimino.getcoords()
             for (x,y) in coords:
                 if board[x][y]!='':
-                    gameover(screen)
-                    return
+                    returnstatus = gameover(screen)
+                    return returnstatus
         else:
             newt = time.time()
             if timestep+timeinterval < newt:
@@ -334,6 +338,7 @@ def game(screen,startinglevel):
                 shapemove(tetrimino,board,0,1)
                 timestep = newt        
 
+        #print "Cleared: ", cleared, "Level: ", level, "Interval: ", timeinterval
         # unsure if this use of .blit() is the most efficient I could do
         # on this scale, that probably does not matter
 
@@ -394,12 +399,12 @@ def start(screen):
     screen.fill(getrgb("#000000"))
     lines = ['Hit ENTER to play',"ESC to quit","P to pause",
              "N for new game", "L to change starting level",
-             "Arrow keys and space to move"]
+             "M for main menu", "Arrow keys and space to move"]
 
     tetris = title.render("TETRIS",1,color)
     whitelines = [instruct.render(i,1,color) for i in lines]
-    posns = [(93,270),(121,317),(124,364),(102,411),(50,458),(34,505)]
-    screen.blit(tetris,(95,163))
+    posns = [(93,246),(121,293),(124,340),(102,387),(50,481),(98,434),(34,528)]
+    screen.blit(tetris,(95,139))
     for i in range(len(posns)):
         screen.blit(whitelines[i],posns[i])
     pygame.display.flip()
@@ -409,7 +414,7 @@ def start(screen):
                 exit(0)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    return 1
+                    return 0
                 elif event.key == pygame.K_l:
                     return getlevel(screen,color,instruct)
                 elif event.key == pygame.K_ESCAPE:
@@ -417,7 +422,14 @@ def start(screen):
 
 def handler(screen,startinglevel):
     while True:
-        game(screen,startinglevel)
+        x = game(screen,startinglevel)
+        if x==9:
+            return
+
+def metahandler(screen):
+    while True:
+        startinglevel = start(screen)
+        handler(screen,startinglevel)
 
 def main():
     makeblockimages()
@@ -427,8 +439,7 @@ def main():
     global typeface
     typeface = pygame.font.Font('BebasNeue.ttf',32)
 
-    startinglevel = start(screen)
-    handler(screen,startinglevel)
+    metahandler(screen)
 
 if __name__=='__main__':
     main()
