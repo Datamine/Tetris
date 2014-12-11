@@ -35,23 +35,29 @@ class Tetrimino(object):
 blockimages = {}
 
 # Colors of the Tetriminoes, white for the flashing effect
-colors = ["#FFE922","#3CFF2D","#2F3AFF","#990084","#CC1100","#FF7E00","#065C00","#FFFFFF"]
+colors = ["#FFE922","#3CFF2D","#2F3AFF","#990084","#CC1100","#FF7E00",
+          "#065C00","#FFFFFF"]
 
 # define the different tetriminoes. ([Blocks],[Center]): center for rotation
 shapes = [# "I"
           Tetrimino([Block(colors[0],4,i) for i in range(4)],[4,1]),
           # "T"
-          Tetrimino([Block(colors[1],i,0) for i in [3,4,5]] + [Block(colors[1],4,1)],[4,0]),
+          Tetrimino([Block(colors[1],i,0) for i in [3,4,5]] + \
+                    [Block(colors[1],4,1)],[4,0]),
           # Square
           Tetrimino([Block(colors[2],i,j) for i in [4,5] for j in [0,1]],[4,0]),
           #  "L"
-          Tetrimino([Block(colors[3],4,i) for i in range(3)] + [Block(colors[3],5,2)],[4,1]),
+          Tetrimino([Block(colors[3],4,i) for i in range(3)] + \
+                    [Block(colors[3],5,2)],[4,1]),
           # Backwards "L"
-          Tetrimino([Block(colors[4],5,i) for i in range(3)] + [Block(colors[4],4,2)],[5,1]),
+          Tetrimino([Block(colors[4],5,i) for i in range(3)] + \
+                    [Block(colors[4],4,2)],[5,1]),
           # "S"
-          Tetrimino([Block(colors[5],4,0),Block(colors[5],3,1),Block(colors[5],4,1),Block(colors[5],5,0)],[4,0]),
+          Tetrimino([Block(colors[5],4,0),Block(colors[5],3,1),\
+                     Block(colors[5],4,1),Block(colors[5],5,0)],[4,0]),
           # "Z"
-          Tetrimino([Block(colors[6],4,0),Block(colors[6],3,0),Block(colors[6],4,1),Block(colors[6],5,1)],[4,0])]
+          Tetrimino([Block(colors[6],4,0),Block(colors[6],3,0),\
+                     Block(colors[6],4,1),Block(colors[6],5,1)],[4,0])]
 
 def newtetrimino():
     """
@@ -114,7 +120,8 @@ def handle(tetrimino,board,direction):
             newb4x = tetrimino.centerx-direction
             newb4y = tetrimino.centery-1
     try:
-        if board[newb2x][newb2y]!='' or board[newb4x][newb4y]!='' or any(item < 0 for item in [newb2x,newb2y,newb4x,newb4y]):
+        if board[newb2x][newb2y]!='' or board[newb4x][newb4y]!='' or \
+           any(item < 0 for item in [newb2x,newb2y,newb4x,newb4y]):
             rotate = False
     except:
         rotate = False
@@ -207,6 +214,8 @@ def gameover(screen):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     exit(0)
+                elif event.key == pygame.K_n:
+                    return
                 elif event.key == pygame.K_RETURN:
                     return
 
@@ -224,11 +233,6 @@ def pause(screen):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     return
-def pboard(board):
-    print "=============="
-    for j in range(20):
-        l= map(lambda x: 'X' if x!='' else ' ', [board[i][j] for i in range(10)])
-        print l
 
 def check(board,screen):
     b2 = deepcopy(board)
@@ -241,6 +245,7 @@ def check(board,screen):
                 for t in row:
                     t.color="#FFFFFF"
                 effect=True
+    lrows = len(rows)
     if effect:
         blitboard(b2,screen)
         pygame.display.flip()
@@ -256,16 +261,13 @@ def check(board,screen):
                 for j in range(current):
                     if board[i][j]!='':
                         board[i][j].y += 1
-                print "------\n", board[i]
                 del board[i][current]
                 board[i] = [''] + board[i]
-                print board[i]
             rows.remove(current)
             rows = map(lambda y: y+1,rows)
-        return True
-    return False
+    return lrows
 
-def game(screen):
+def game(screen,startinglevel):
     cleared = 0
     tetrimino = newtetrimino()
     
@@ -298,11 +300,12 @@ def game(screen):
                     pause(screen)
                 elif event.key == pygame.K_SPACE:
                     drop(tetrimino,board)
+        x = 0
         x = check(board,screen)
-        #pboard(board)
-        if x:
+        if x>0:
             blitboard(board,screen)
             pygame.display.flip()
+        cleared += x
         newpiece = False
         coords = tetrimino.getcoords()
         for c in coords:
@@ -336,7 +339,6 @@ def game(screen):
 
         screen.fill(backgroundcolor)
         screen.blit(background,(5,5))
-        
         # blit the known blocks here...
         blitboard(board,screen)
         # update screen
@@ -344,17 +346,60 @@ def game(screen):
             screen.blit(block.getimg(), block.getposn())
         pygame.display.flip()
 
+def getlevel(screen,color,typeface):
+    highlight = getrgb("#3CFF2D")
+    screen.fill(getrgb("#000000"))
+    levels = range(1,101)
+    lines = [typeface.render(str(i),1,color) for i in levels]
+    ranges = [range(a,b) for (a,b) in [(0,20),(20,40),(40,60),(60,80),(80,100)]]
+    locs = []
+    rectangles = {}
+    for j in zip(ranges,[57,114,171,228,285]):
+        for k in j[0]:
+            w = lines[k].get_rect().width/2
+            h = 32
+            x = j[1]-w
+            y = (34*(k%20))+10
+            screen.blit(lines[k],(x,y))
+            locs.append((x,y))
+            rectangles[(x,y,x+(2*w),y+h)] = k
+    pygame.display.flip()
+    active = []
+    while True:
+        # not sure exactly why the next two lines work
+        for event in pygame.event.get():
+            x,y = pygame.mouse.get_pos()
+            # could make this a lot faster, but whatever
+            for (x1,y1,x2,y2) in rectangles:
+                if (x1 <= x <= x2) and (y1 <= y <= y2):
+                    current = rectangles[(x1,y1,x2,y2)]
+                    if current not in active: 
+                        active.append(current)
+                        screen.blit(typeface.render(str(levels[current]),1,highlight),(x1,y1))
+                        pygame.display.flip()
+            if len(active) > 1:
+                delete = active[0]
+                pygame.draw.rect(screen,getrgb("#000000"),(locs[delete][0],locs[delete][1],35,32))
+                screen.blit(lines[delete],locs[delete])
+                pygame.display.flip()
+                del active[0]
+            if any(x==1 for x in pygame.mouse.get_pressed()):
+                print active[0]
+                return active[0]
+
 def start(screen):
     title = pygame.font.Font('BebasNeue.ttf',72)
     instruct = pygame.font.Font('BebasNeue.ttf',26)
     color = getrgb("#FFFFFF")
     screen.fill(getrgb("#000000"))
-    lines = ['Hit ENTER to play',"ESC to quit","P to pause","Arrow keys and space to move"]
+    lines = ['Hit ENTER to play',"ESC to quit","P to pause",
+             "N for new game", "L to change starting level",
+             "Arrow keys and space to move"]
 
     tetris = title.render("TETRIS",1,color)
     whitelines = [instruct.render(i,1,color) for i in lines]
-    posns = [(93,332),(121,379),(124,426),(34,473)]
-    screen.blit(tetris,(95,225))
+    posns = [(93,270),(121,317),(124,364),(102,411),(50,458),(34,505)]
+    screen.blit(tetris,(95,163))
     for i in range(len(posns)):
         screen.blit(whitelines[i],posns[i])
     pygame.display.flip()
@@ -364,13 +409,15 @@ def start(screen):
                 exit(0)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    return
+                    return 1
+                elif event.key == pygame.K_l:
+                    return getlevel(screen,color,instruct)
                 elif event.key == pygame.K_ESCAPE:
                     exit(0)
 
-def handler(screen):
+def handler(screen,startinglevel):
     while True:
-        game(screen)
+        game(screen,startinglevel)
 
 def main():
     makeblockimages()
@@ -380,8 +427,8 @@ def main():
     global typeface
     typeface = pygame.font.Font('BebasNeue.ttf',32)
 
-    start(screen)
-    handler(screen)
+    startinglevel = start(screen)
+    handler(screen,startinglevel)
 
 if __name__=='__main__':
     main()
