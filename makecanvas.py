@@ -1,17 +1,11 @@
 # Small script to generate Tetris Canvas
 from PIL import Image, ImageDraw
-
-# size of square on the tetris grid
-blocksize = 32
+from gameproperties import *
 
 # assuming a 1px divider between every two squares to form the grid,
 # and a grid size of 10 by 20 squares
 canvasheight = (20 * blocksize) + 21
 canvaswidth = (10 * blocksize) + 11
-
-# setting grid colors
-background = "#9B9B9B"
-gridline = "#545452"
 
 im = Image.new("RGB", (canvaswidth,canvasheight), background)
 draw = ImageDraw.Draw(im)

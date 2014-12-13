@@ -1,83 +1,41 @@
 # John Loeber | 26-NOV-2014 | Python 2.7.8 | x86_64 Debian Linux | www.johnloeber.com
 
+from gameproperties import gridline
+from tscore import getmaxlines, writemaxlines
+from blocks import *
+
 from sys import exit
-from makecanvas import gridline, blocksize
 from ImageColor import getrgb
-from random import choice
-from copy import deepcopy
-from os.path import expanduser
+#from copy import deepcopy
 import time
 import pygame
 
-class Block(object):
-    def __init__(self,color,x,y):
-        self.color = color
-        self.x = x
-        self.y = y
-    def getposn(self):
-        return ((blocksize*self.x)+self.x+6,(blocksize*self.y)+self.y+6)
-    def getimg(self):
-        global blockimages
-        return blockimages[self.color]
-
-class Tetrimino(object):
-    def __init__(self,blocks,center):
-        self.b1 = blocks[0]
-        self.b2 = blocks[1]
-        self.b3 = blocks[2]
-        self.b4 = blocks[3]
-        self.centerx = center[0]
-        self.centery = center[1]
-    def blocks(self):
-        return [self.b1,self.b2,self.b3,self.b4]
-    def getcoords(self):
-        return [(b.x,b.y) for b in self.blocks()]
+################################################################################
+    
+##  Configuring Block Images
 
 blockimages = {}
 
-# Colors of the Tetriminoes, white for the flashing effect
-colors = ["#FFE922","#3CFF2D","#2F3AFF","#990084","#CC1100","#FF7E00",
-          "#065C00","#FFFFFF"]
-
-# define the different tetriminoes. ([Blocks],[Center]): center for rotation
-shapes = [# "I"
-          Tetrimino([Block(colors[0],4,i) for i in range(4)],[4,1]),
-          # "T"
-          Tetrimino([Block(colors[1],i,0) for i in [3,4,5]] + \
-                    [Block(colors[1],4,1)],[4,0]),
-          # Square
-          Tetrimino([Block(colors[2],i,j) for i in [4,5] for j in [0,1]],[4,0]),
-          #  "L"
-          Tetrimino([Block(colors[3],4,i) for i in range(3)] + \
-                    [Block(colors[3],5,2)],[4,1]),
-          # Backwards "L"
-          Tetrimino([Block(colors[4],5,i) for i in range(3)] + \
-                    [Block(colors[4],4,2)],[5,1]),
-          # "S"
-          Tetrimino([Block(colors[5],4,0),Block(colors[5],3,1),\
-                     Block(colors[5],4,1),Block(colors[5],5,0)],[4,0]),
-          # "Z"
-          Tetrimino([Block(colors[6],4,0),Block(colors[6],3,0),\
-                     Block(colors[6],4,1),Block(colors[6],5,1)],[4,0])]
-
-def newtetrimino():
+def getimg(Block):
     """
-    Returns a random, new tetrimino.
+    Returns the pygame image representing a block.
     """
-    global shapes
-    return deepcopy(choice(shapes))
+    return blockimages[Block.color]
 
 def makeblockimages():
     """
     Takes the size and colors of the blocks to make images of them.
     This is run just once in the start of the game.
     """
-    global blockimages, colors
     for c in colors:
         newblock = pygame.Surface((blocksize,blocksize))
         newblock.fill(getrgb(c))
         blockimages[c] = newblock
     return
+
+################################################################################
+
+##  Moving and Rotating Tetriminoes
 
 def shapemove(tetrimino,board,x,y):
     """
@@ -179,35 +137,46 @@ def shaperotate(tetrimino,board):
                 b.y = locs[index][1]
     return
 
-def blitboard(board,screen):
-    for y in board:
-        for x in y:
-            if x!='':
-                screen.blit(x.getimg(),x.getposn())
-    return
+################################################################################
+
+## Pause, Gameover, and GetLevel Screens
 
 def maketext(screen,blacklines,whitelines,posns):
+    """
+    Makes white text with a black stroke for the GameOver and Pause screens.
+    """
     for i in range(len(blacklines)):
         offone = (posns[i][0]+2,posns[i][1]+2)
         offtwo = (posns[i][0]-2,posns[i][1]-2)
         offthree = (posns[i][0]+2,posns[i][1]-2)
         offfour = (posns[i][0]-2,posns[i][1]+2)
-        screen.blit(blacklines[i],offone)
-        screen.blit(blacklines[i],offtwo)
-        screen.blit(blacklines[i],offthree)
-        screen.blit(blacklines[i],offfour)
+        for j in [offone,offtwo,offthree,offfour]:
+            screen.blit(blacklines[i],j)
         screen.blit(whitelines[i],posns[i])
     pygame.display.flip()
     return
 
+def makelines():
+    """
+    Makes lines for the gameover and pause screens
+    """
+    global GOblacklines, GOwhitelines, Pblacklines, Pwhitelines
+    GOlines = ['Game Over','Hit ENTER to play again','ESC to quit', 'M for main menu']
+    Plines = ['Paused',"Hit p to resume"]
+    typeface = pygame.font.Font('BebasNeue.ttf',32)
+    GOblacklines = [typeface.render(i,1,getrgb("#000000")) for i in GOlines]
+    GOwhitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in GOlines]
+    Pblacklines = [typeface.render(i,1,getrgb("#000000")) for i in Plines]
+    Pwhitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in Plines]
+    return 
+
 def gameover(screen):
-    global typeface
-    lines = ['Game Over','Hit ENTER to play again','ESC to quit', 'M for main menu']
-    blacklines = [typeface.render(i,1,getrgb("#000000")) for i in lines]
-    whitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in lines]
+    """
+    Blits the gameover menu.
+    """
     # calculated the positions by hand and hardcoded them
     posns = [(116,247),(46,306),(112,360),(83,414)]
-    maketext(screen,blacklines,whitelines,posns)
+    maketext(screen,GOblacklines,GOwhitelines,posns)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
@@ -223,13 +192,11 @@ def gameover(screen):
                     return 1
 
 def pause(screen):
-    global typeface
-    lines = ['Paused',"Hit p to resume"]
-    blacklines = [typeface.render(i,1,getrgb("#000000")) for i in lines]
-    whitelines = [typeface.render(i,1,getrgb("#FFFFFF")) for i in lines]
-    print blacklines[1].get_rect().width
+    """
+    Blits the pause dialogue.
+    """
     posns = [(133,309),(89,353)]
-    maketext(screen,blacklines,whitelines,posns)
+    maketext(screen,Pblacklines,Pwhitelines,posns)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
@@ -237,26 +204,66 @@ def pause(screen):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     return
+                elif event.key == pygame.K_ESCAPE:
+                    exit(0)
 
-# retrieve max score from the store-file
-def getmaxlines():
-    try:
-        with open(expanduser("~/.jtetris.txt"),"r") as f:
-            return f.readlines()[1].rstrip('\n')
-    except:
-        return "0"
+def getlevel(screen,color,typeface):
+    """
+    Blits the getlevel menu, and returns the level the user selects.
+    """
+    highlight = getrgb("#3CFF2D")
+    screen.fill(getrgb("#000000"))
+    levels = range(1,101)
+    lines = [typeface.render(str(i),1,color) for i in levels]
+    ranges = [range(a,b) for (a,b) in [(0,20),(20,40),(40,60),(60,80),(80,100)]]
+    locs = []
+    rectangles = {}
+    for j in zip(ranges,[57,114,171,228,285]):
+        for k in j[0]:
+            w = lines[k].get_rect().width/2
+            h = 32
+            x = j[1]-w
+            y = (34*(k%20))+10
+            screen.blit(lines[k],(x,y))
+            locs.append((x,y))
+            rectangles[(x,y,x+(2*w),y+h)] = k
+    pygame.display.flip()
+    active = []
+    while True:
+        for event in pygame.event.get():
+            x,y = pygame.mouse.get_pos()
+            # could make this faster, but this is small-scale.
+            for (x1,y1,x2,y2) in rectangles:
+                if (x1 <= x <= x2) and (y1 <= y <= y2):
+                    current = rectangles[(x1,y1,x2,y2)]
+                    if current not in active: 
+                        active.append(current)
+                        screen.blit(typeface.render(str(levels[current]),1,highlight),(x1,y1))
+                        pygame.display.flip()
+            if len(active) > 1:
+                delete = active[0]
+                pygame.draw.rect(screen,getrgb("#000000"),
+                                 (locs[delete][0],locs[delete][1],35,32))
+                screen.blit(lines[delete],locs[delete])
+                pygame.display.flip()
+                del active[0]
+            if any(x==1 for x in pygame.mouse.get_pressed()):
+                print active[0]
+                return active[0]
 
-# write max score to the store-file
-def writemaxlines(n):
-    # Can do this w/o rewriting msg every time. Not important on this scale.
-    message = ("This file was generated by tetris.py. It keeps track of your "
-               "max score in the Tetris game. For documentation, see"
-               " http://www.johnloeber.com/docs/tetris.html.\n")
-    try:
-        with open(expanduser("~/.jtetris.txt"),"w") as f:
-            f.write(message+str(n))
-    except:
-        return
+################################################################################
+
+## Other game internals
+
+def blitboard(board,screen):
+    """
+    Blits all blocks in the board to the screen.
+    """
+    for y in board:
+        for x in y:
+            if x!='':
+                screen.blit(getimg(x),x.getposn())
+    return
 
 def check(board,screen):
     b2 = deepcopy(board)
@@ -387,49 +394,8 @@ def game(screen,startinglevel):
         
         # update screen
         for block in tetrimino.blocks():
-            screen.blit(block.getimg(), block.getposn())
+            screen.blit(getimg(block), block.getposn())
         pygame.display.flip()
-
-def getlevel(screen,color,typeface):
-    highlight = getrgb("#3CFF2D")
-    screen.fill(getrgb("#000000"))
-    levels = range(1,101)
-    lines = [typeface.render(str(i),1,color) for i in levels]
-    ranges = [range(a,b) for (a,b) in [(0,20),(20,40),(40,60),(60,80),(80,100)]]
-    locs = []
-    rectangles = {}
-    for j in zip(ranges,[57,114,171,228,285]):
-        for k in j[0]:
-            w = lines[k].get_rect().width/2
-            h = 32
-            x = j[1]-w
-            y = (34*(k%20))+10
-            screen.blit(lines[k],(x,y))
-            locs.append((x,y))
-            rectangles[(x,y,x+(2*w),y+h)] = k
-    pygame.display.flip()
-    active = []
-    while True:
-        # not sure exactly why the next two lines work
-        for event in pygame.event.get():
-            x,y = pygame.mouse.get_pos()
-            # could make this a lot faster, but whatever
-            for (x1,y1,x2,y2) in rectangles:
-                if (x1 <= x <= x2) and (y1 <= y <= y2):
-                    current = rectangles[(x1,y1,x2,y2)]
-                    if current not in active: 
-                        active.append(current)
-                        screen.blit(typeface.render(str(levels[current]),1,highlight),(x1,y1))
-                        pygame.display.flip()
-            if len(active) > 1:
-                delete = active[0]
-                pygame.draw.rect(screen,getrgb("#000000"),(locs[delete][0],locs[delete][1],35,32))
-                screen.blit(lines[delete],locs[delete])
-                pygame.display.flip()
-                del active[0]
-            if any(x==1 for x in pygame.mouse.get_pressed()):
-                print active[0]
-                return active[0]
 
 def start(screen):
     title = pygame.font.Font('BebasNeue.ttf',72)
@@ -459,26 +425,21 @@ def start(screen):
                 elif event.key == pygame.K_ESCAPE:
                     exit(0)
 
-def handler(screen,startinglevel):
-    while True:
-        x = game(screen,startinglevel)
-        if x==9:
-            return
-
-def metahandler(screen):
-    while True:
-        startinglevel = start(screen)
-        handler(screen,startinglevel)
-
 def main():
     makeblockimages()
     pygame.init()
     size = (341,700)
     screen = pygame.display.set_mode(size)
-    global typeface
-    typeface = pygame.font.Font('BebasNeue.ttf',32)
+    
+    makelines()    
 
-    metahandler(screen)
+    while True:
+        startinglevel = start(screen)
+        while True:
+            x = game(screen,startinglevel)
+            if x==9:
+                break
+
 
 if __name__=='__main__':
     main()
