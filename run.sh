@@ -10,4 +10,4 @@ if [[ ! $(which python2) ]]; then
   exit 1
 fi
 
-python2 tetris.py
+exec python2 tetris.py
