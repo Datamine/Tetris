@@ -1,5 +1,5 @@
 #!/bin/bash
-# runs tetris-game
+# runs tetris-game.
 
 pathname="$(dirname "$0")"
 
@@ -11,3 +11,5 @@ if [[ ! $(which python2) ]]; then
 fi
 
 exec python2 tetris.py
+
+# Thanks to Geoff Shannon and David Karapetyan for guidance writing this shell script.
