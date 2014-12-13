@@ -273,7 +273,12 @@ def getlevel(screen,color,typeface):
             if any(x==1 for x in pygame.mouse.get_pressed()):
                 # if user clicks in rectangle: return the corresponding level
                 return active[0]
-
+            if event.type == pygame.QUIT: 
+                exit(0)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    exit(0)
+         
 ################################################################################
 
 ## Other game internals
