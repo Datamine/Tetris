@@ -1,6 +1,6 @@
 # Small script to generate Tetris Canvas
 from PIL import Image, ImageDraw
-from gameproperties import *
+from gameproperties import blocksize, background, gridline
 
 # assuming a 1px divider between every two squares to form the grid,
 # and a grid size of 10 by 20 squares

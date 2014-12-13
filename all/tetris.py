@@ -6,7 +6,6 @@ from blocks import *
 
 from sys import exit
 from ImageColor import getrgb
-#from copy import deepcopy
 import time
 import pygame
 
@@ -43,7 +42,7 @@ def shapemove(tetrimino,board,x,y):
     of such a move first.
     """
     blocks = tetrimino.blocks()
-    # make sure the given square is available
+    # make sure that for each block, the next square is available.
     available = True
     for block in blocks:
         # assuming the board is of size 10 x 20
@@ -51,6 +50,7 @@ def shapemove(tetrimino,board,x,y):
             available = False
         elif board[block.x+x][block.y+y]!='':
             available = False
+    # if each block can move, then all blocks are moved.
     if available:
         for block in blocks:
             block.x +=x
@@ -64,9 +64,11 @@ def handle(tetrimino,board,direction):
     Rotates the "S" and "Z" shapes.
     """
     # detect whether it's oriented horizontally or vertically
-    ys = [a.y for a in tetrimino.blocks()]
+    ys = len(set([a.y for a in tetrimino.blocks()]))
     rotate = True
-    if len(set(ys))==3:
+    if ys==3:
+            # note that block1 and block3 stay in constant position,
+            # so we only need to check the potential location of blocks 2 & 4
             newb2x = tetrimino.centerx+direction
             newb2y = tetrimino.centery
             
@@ -78,12 +80,14 @@ def handle(tetrimino,board,direction):
             
             newb4x = tetrimino.centerx-direction
             newb4y = tetrimino.centery-1
+    # checks all of the potential block-locations for availability.
     try:
         if board[newb2x][newb2y]!='' or board[newb4x][newb4y]!='' or \
            any(item < 0 for item in [newb2x,newb2y,newb4x,newb4y]):
             rotate = False
     except:
         rotate = False
+    # rotates the shape if positions for blocks 2 and 4 are available.
     if rotate:
         tetrimino.b2.x = newb2x
         tetrimino.b2.y = newb2y
@@ -98,6 +102,7 @@ def drop(tetrimino,board):
     """
     prev = deepcopy(tetrimino)
     shapemove(tetrimino,board,0,1)
+    # move the tetrimino downwards until this no longer does anything.
     while prev.getcoords()!=tetrimino.getcoords():
         shapemove(prev,board,0,1)
         shapemove(tetrimino,board,0,1)
@@ -116,7 +121,8 @@ def shaperotate(tetrimino,board):
         handle(tetrimino,board,1)
     elif c=="#065C00":
         handle(tetrimino,board,-1)
-    else:           
+    else:
+        # rotation of points on a cartesian plane           
         locs = []
         rotate = True
         for b in tetrimino.blocks():
@@ -146,6 +152,8 @@ def maketext(screen,blacklines,whitelines,posns):
     Makes white text with a black stroke for the GameOver and Pause screens.
     """
     for i in range(len(blacklines)):
+        # a stroke is achieved by rendering black text and offsetting it
+        # by 2 px in each direction
         offone = (posns[i][0]+2,posns[i][1]+2)
         offtwo = (posns[i][0]-2,posns[i][1]-2)
         offthree = (posns[i][0]+2,posns[i][1]-2)
@@ -158,7 +166,8 @@ def maketext(screen,blacklines,whitelines,posns):
 
 def makelines():
     """
-    Makes lines for the gameover and pause screens
+    Makes lines for the gameover and pause screens. This runs just once in the
+    start, to prevent unneccessary repeated executions.
     """
     global GOblacklines, GOwhitelines, Pblacklines, Pwhitelines
     GOlines = ['Game Over','Hit ENTER to play again','ESC to quit', 'M for main menu']
@@ -178,6 +187,7 @@ def gameover(screen):
     posns = [(116,247),(46,306),(112,360),(83,414)]
     maketext(screen,GOblacklines,GOwhitelines,posns)
     while True:
+        # keystroke handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 exit(0)
@@ -198,6 +208,7 @@ def pause(screen):
     posns = [(133,309),(89,353)]
     maketext(screen,Pblacklines,Pwhitelines,posns)
     while True:
+        # keystroke handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 exit(0)
@@ -215,32 +226,44 @@ def getlevel(screen,color,typeface):
     screen.fill(getrgb("#000000"))
     levels = range(1,101)
     lines = [typeface.render(str(i),1,color) for i in levels]
+    # each range is for a column. Five columns of 20 levels each.
     ranges = [range(a,b) for (a,b) in [(0,20),(20,40),(40,60),(60,80),(80,100)]]
     locs = []
     rectangles = {}
+    # the list [57..285] represents the y-locations of each column.
     for j in zip(ranges,[57,114,171,228,285]):
         for k in j[0]:
+            # center the text on the column
             w = lines[k].get_rect().width/2
             h = 32
             x = j[1]-w
+            # %20 to divide the 100 levels into 5 columns. 34 is vertical px
+            # distance between entries.
             y = (34*(k%20))+10
             screen.blit(lines[k],(x,y))
+            # locs: map every level to (x,y) coord denoting start of rectangle
             locs.append((x,y))
+            # rectangles: map every rectangle to its level.
             rectangles[(x,y,x+(2*w),y+h)] = k
     pygame.display.flip()
+    # active: the level the user has moved their cursor over
     active = []
     while True:
         for event in pygame.event.get():
             x,y = pygame.mouse.get_pos()
             # could make this faster, but this is small-scale.
             for (x1,y1,x2,y2) in rectangles:
+                # finds the rectangle the cursor is in
                 if (x1 <= x <= x2) and (y1 <= y <= y2):
                     current = rectangles[(x1,y1,x2,y2)]
                     if current not in active: 
                         active.append(current)
+                        # makes the text in the current rectangle green
                         screen.blit(typeface.render(str(levels[current]),1,highlight),(x1,y1))
                         pygame.display.flip()
             if len(active) > 1:
+                # if the user has moved the cursor to another rectangle: make
+                # the text in the previous rectangle white again.
                 delete = active[0]
                 pygame.draw.rect(screen,getrgb("#000000"),
                                  (locs[delete][0],locs[delete][1],35,32))
@@ -248,7 +271,7 @@ def getlevel(screen,color,typeface):
                 pygame.display.flip()
                 del active[0]
             if any(x==1 for x in pygame.mouse.get_pressed()):
-                print active[0]
+                # if user clicks in rectangle: return the corresponding level
                 return active[0]
 
 ################################################################################
@@ -266,6 +289,9 @@ def blitboard(board,screen):
     return
 
 def check(board,screen):
+    """
+    Checks for completed lines, and clears them.
+    """
     b2 = deepcopy(board)
     effect = False
     rows = []
@@ -278,6 +304,7 @@ def check(board,screen):
                 effect=True
     lrows = len(rows)
     if effect:
+        # flashing effect when line clears
         blitboard(b2,screen)
         pygame.display.flip()
         time.sleep(0.02)
@@ -287,6 +314,9 @@ def check(board,screen):
         blitboard(b2,screen)
         pygame.display.flip()
         while rows:
+            # for each of the cleared rows: remove it from the board, 
+            # and add a new empty row at the top. also, advance the y-coord
+            # of any blocks above.
             current = max(rows)
             for i in range(10):
                 for j in range(current):
@@ -299,6 +329,9 @@ def check(board,screen):
     return lrows
 
 def game(screen,startinglevel):
+    """
+    The tetris-game itself. Handles user input to move, etc.
+    """
     cleared = 0
     tetrimino = newtetrimino()
     bestscore = int(getmaxlines())
@@ -316,8 +349,10 @@ def game(screen,startinglevel):
     
     while True:
         level = cleared/10 + startinglevel
+        # amount of time in-between automatic block movements down
         timeinterval = 0.75*(0.95**level)
         for event in pygame.event.get():
+            # keystroke handling
             if event.type == pygame.QUIT: 
                 exit(0)
             if event.type == pygame.KEYDOWN:
@@ -339,15 +374,18 @@ def game(screen,startinglevel):
                     pause(screen)
                 elif event.key == pygame.K_SPACE:
                     drop(tetrimino,board)
-   
+
+        # check for full lines and clears them 
         x = 0
         x = check(board,screen)
         cleared += x
         newpiece = False
+        # update the score
         if cleared > bestscore:
             writemaxlines(cleared)
             bestscore = cleared
         coords = tetrimino.getcoords()
+        # check if a new piece should be spawned
         for c in coords:
             if c[1]==19:
                 newpiece=True
@@ -359,27 +397,32 @@ def game(screen,startinglevel):
             except:
                 print "Unexpected Error"
         if newpiece:
+            # if a new piece is spawned, then we write the current piece
+            # to the board.
             for t in tetrimino.blocks():
                 board[t.x][t.y] = t
             tetrimino = newtetrimino()
             coords = tetrimino.getcoords()
+            # check if the new piece has space to be spawned. else: gameover
             for (x,y) in coords:
                 if board[x][y]!='':
                     returnstatus = gameover(screen)
                     return returnstatus
         else:
+            # check if the piece should be moved down
             newt = time.time()
             if timestep+timeinterval < newt:
                 # move current block down
                 shapemove(tetrimino,board,0,1)
                 timestep = newt        
 
-        #print "Cleared: ", cleared, "Level: ", level, "Interval: ", timeinterval
         # unsure if this use of .blit() is the most efficient I could do
         # on this scale, that probably does not matter
 
         screen.fill(backgroundcolor)
         screen.blit(background,(5,5))
+
+        # update the information at the bottom of the screen
 
         leveltext = bottom.render("Level: " + str(level+1),1,white)
         clearedtext = bottom.render("Lines: " + str(cleared),1,white)
@@ -389,7 +432,7 @@ def game(screen,startinglevel):
         screen.blit(clearedtext,((341-clearedtext.get_rect().width)/2,675))
         screen.blit(besttext,(331-(besttext.get_rect().width),675))
 
-        # blit the known blocks here...
+        # blit the known blocks
         blitboard(board,screen)
         
         # update screen
@@ -398,6 +441,9 @@ def game(screen,startinglevel):
         pygame.display.flip()
 
 def start(screen):
+    """
+    Blits the start-menu.
+    """
     title = pygame.font.Font('BebasNeue.ttf',72)
     instruct = pygame.font.Font('BebasNeue.ttf',26)
     color = getrgb("#FFFFFF")
@@ -414,6 +460,7 @@ def start(screen):
         screen.blit(whitelines[i],posns[i])
     pygame.display.flip()
     while True:
+        # keystroke handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 exit(0)

@@ -1,4 +1,4 @@
-from gameproperties import blocksize
+from gameproperties import blocksize,colors
 from copy import deepcopy
 from random import choice
 
@@ -28,10 +28,6 @@ class Tetrimino(object):
         return [self.b1,self.b2,self.b3,self.b4]
     def getcoords(self):
         return [(b.x,b.y) for b in self.blocks()]
-
-# Colors of the Tetriminoes, white for the flashing effect
-colors = ["#FFE922","#3CFF2D","#2F3AFF","#990084","#CC1100","#FF7E00",
-          "#065C00","#FFFFFF"]
 
 # define the different tetriminoes. ([Blocks],[Center]): center for rotation
 shapes = [# "I"
