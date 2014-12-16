@@ -6,4 +6,4 @@ Requires Python2 and the pygame library (the Ubuntu-type folks can install it wi
 
 Run the game with `./run`, a shell-script that launches `tetris.py`.
 
-Documentation [here]("http://www.johnloeber.com/docs/tetris.html").
+Documentation [here](http://www.johnloeber.com/docs/tetris.html).
