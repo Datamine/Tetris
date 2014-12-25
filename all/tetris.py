@@ -470,7 +470,7 @@ def start(screen):
             if event.type == pygame.QUIT: 
                 exit(0)
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
+                if (event.key == pygame.K_RETURN) or (event.key == pygame.K_n):
                     return 0
                 elif event.key == pygame.K_l:
                     return getlevel(screen,color,instruct)
